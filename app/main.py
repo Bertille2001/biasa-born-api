@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import psycopg2
 import psycopg2.extras
+import os
+from urllib.parse import urlparse
 
 app = FastAPI(title="Biasa Born API")
 
@@ -12,16 +14,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DB = {
-    "host": "localhost",
-    "port": 5432,
-    "dbname": "biasa_born",
-    "user": "postgres",
-    "password": "biasa2026"
-}
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:biasa2026@localhost:5432/biasa_born")
 
 def get_conn():
-    return psycopg2.connect(**DB, cursor_factory=psycopg2.extras.RealDictCursor)
+    url = urlparse(DATABASE_URL)
+    return psycopg2.connect(
+        host=url.hostname,
+        port=url.port or 5432,
+        dbname=url.path[1:],
+        user=url.username,
+        password=url.password,
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
 
 @app.on_event("startup")
 def create_tables():
